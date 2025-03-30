@@ -16,53 +16,65 @@ import { CommonModule } from '@angular/common';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [FormsModule, MatCardModule, MatButtonModule, FontAwesomeModule, CommonModule],
+  imports: [
+    FormsModule,
+    MatCardModule,
+    MatButtonModule,
+    FontAwesomeModule,
+    CommonModule,
+  ],
   styles: ``,
   template: `
-  <div class="container">
-    <h1>Weather Forecast</h1>
-    <input [(ngModel)]="zipCode" placeholder="Enter ZIP code" />
-    <button mat-button color="primary" (click)="fetchWeather()">
-      Get Forecast
-    </button>
+    <div class="container">
+      <h1>Weather Forecast</h1>
+      <input [(ngModel)]="zipCode" placeholder="Enter ZIP code" />
+      <button mat-button color="primary" (click)="fetchWeather()">
+        Get Forecast
+      </button>
 
-    <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+      <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
 
-    <div *ngIf="weatherData">
-      <h2>5-Day Forecast</h2>
-      <div class="forecast-container">
-        <mat-card
-          *ngFor="let period of weatherData.properties.periods"
-          class="forecast-card"
-        >
-          <mat-card-header>
-            <mat-card-title>{{ period.name }}</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <fa-icon [icon]="getWeatherIcon(period.shortForecast)"></fa-icon>
-            <p><strong>Temp:</strong> {{ period.temperature }}°F</p>
-            <p><strong>Condition:</strong> {{ period.shortForecast }}</p>
-          </mat-card-content>
-        </mat-card>
+      <div *ngIf="weatherData">
+        <h2>5-Day Forecast for: {{ city }}, {{ state }}</h2>
+        <div class="forecast-container">
+          <mat-card
+            *ngFor="let period of weatherData.properties.periods"
+            class="forecast-card"
+          >
+            <mat-card-header>
+              <mat-card-title>{{ period.name }}</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <fa-icon [icon]="getWeatherIcon(period.shortForecast)"></fa-icon>
+              <p><strong>Temp:</strong> {{ period.temperature }}°F</p>
+              <p><strong>Condition:</strong> {{ period.shortForecast }}</p>
+            </mat-card-content>
+          </mat-card>
+        </div>
       </div>
     </div>
-  </div>
-`
+  `,
 })
 export class AppComponent {
   zipCode: string = '';
   weatherData: any;
+  city: string = '';
+  state: string = '';
   errorMessage: string = '';
 
-  weatherService = inject(WeatherService);
-
-  constructor() {}
+  constructor(private weatherService: WeatherService) {}
 
   fetchWeather() {
     this.weatherService.getCoordinates(this.zipCode).subscribe(
       (geoData) => {
+        console.log("geo", geoData)
         if (geoData.length > 0) {
-          const { lat, lon } = geoData[0];
+          const { lat, lon, display_name } = geoData[0];
+          const nameParts = display_name
+            .split(',')
+            .map((part: any) => part.trim());
+            this.city = nameParts[1];
+            this.state = nameParts[3];
           this.weatherService.getWeather(lat, lon).subscribe(
             (weatherResponse) => {
               const { properties } = weatherResponse;
